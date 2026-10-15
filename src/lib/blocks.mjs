@@ -141,6 +141,60 @@ export function topicLinks(groups, seedKey, num, heading, sub) {
     sub || esc(at(h, SEC.ltSub, 6)), num);
 }
 
+/* ── 찬 몫의 결로 묶은 줄 ─────────────────────────────────────
+   원 안 점유가 닮은 곳을 한 줄씩 모아 건네준다.
+   ★후보 윗부분에서 시드로 다시 뽑아, 쪽마다 걸리는 곳이 달라지게 한다. */
+export function spotPool(regions, { sidoLabel = false, skipGu = '' } = {}) {
+  const out = [];
+  for (const r of regions) if (r.main) for (const g of r.gu) {
+    if (skipGu && `${r.slug}/${g.slug}` === skipGu) continue;
+    for (const s of g.spots) out.push({ href: `/${r.slug}/${g.slug}/${s.slug}/`, label: `${sidoLabel ? `${r.name} ` : ''}${g.name} ${s.name}`, u: s });
+  }
+  return out;
+}
+export function guPool(regions, { sidoLabel = false, skip = '' } = {}) {
+  const out = [];
+  for (const r of regions) for (const g of r.gu) {
+    if (skip && `${r.slug}/${g.slug}` === skip) continue;
+    out.push({ href: `/${r.slug}/${g.slug}/`, label: `${sidoLabel ? `${r.name} ` : ''}${g.name}`, u: g });
+  }
+  return out;
+}
+const SHAPE_HEAD = {
+  full: '세 원이 모두 땅 안에 든', solid: '작은 원은 차고 큰 원에서 빠지는', steady: '원을 키워도 찬 몫이 그대로인',
+  slide: '원이 커질수록 완만하게 줄어드는', sharp: '원이 커지면 가파르게 떨어지는', rise: '원이 커질수록 찬 몫이 느는',
+  thin: '작은 원부터 땅이 드문드문한',
+};
+function themeDefs(noun) {
+  const defs = SHAPE_ORDER.map((sh) => ({
+    k: `s${sh}`, t: `${SHAPE_HEAD[sh]} ${noun}`, f: (u) => u.shape === sh,
+    sort: (a, b) => b.occ[0] - a.occ[0] || b.half - a.half, m: (u) => `찬 몫 ${u.occ[0]}%`,
+  }));
+  defs.push({ k: 'wide', t: `절반 선이 가장 먼 ${noun}`, f: (u) => u.half > 0, sort: (a, b) => b.half - a.half, m: (u) => `절반 ${halfLabel(u.half)}` });
+  defs.push({ k: 'near', t: `절반 선이 가장 가까운 ${noun}`, f: (u) => u.half > 0, sort: (a, b) => a.half - b.half, m: (u) => `절반 ${halfLabel(u.half)}` });
+  defs.push({ k: 'zero', t: `가장 작은 원에서 이미 절반 아래인 ${noun}`, f: (u) => u.half === 0, sort: (a, b) => a.occ[0] - b.occ[0], m: (u) => `찬 몫 ${u.occ[0]}%` });
+  defs.push({ k: 'dropbig', t: `큰 원에서 가장 크게 빠지는 ${noun}`, f: (u) => u.drop > 0, sort: (a, b) => b.drop - a.drop, m: (u) => `빠짐 ${u.drop}%` });
+  defs.push({ k: 'dropsmall', t: `원을 키워도 거의 안 빠지는 ${noun}`, f: (u) => u.drop <= 25, sort: (a, b) => a.drop - b.drop, m: (u) => `빠짐 ${u.drop}%` });
+  defs.push({ k: 'top', t: `가장 작은 원이 가장 꽉 찬 ${noun}`, f: () => true, sort: (a, b) => b.occ[0] - a.occ[0], m: (u) => `찬 몫 ${u.occ[0]}%` });
+  defs.push({ k: 'sparse', t: `가장 작은 원이 가장 성긴 ${noun}`, f: () => true, sort: (a, b) => a.occ[0] - b.occ[0], m: (u) => `찬 몫 ${u.occ[0]}%` });
+  return defs;
+}
+export function themeCards({ pool, noun, seedKey, num, heading, sub, cards = 4, per = 4, prefer = [] }) {
+  const defs = themeDefs(noun).map((d) => ({ ...d, c: pool.filter((x) => d.f(x.u)) })).filter((d) => d.c.length >= per);
+  if (!defs.length) return { html: '', list: [] };
+  const order = shuffle(defs, hash(seedKey, 'tc'));
+  const first = prefer.map((k) => order.find((d) => d.k === k)).filter(Boolean);
+  const chosen = [...first, ...order.filter((d) => !first.includes(d))].slice(0, cards);
+  const list = [];
+  const body = chosen.map((d) => {
+    const win = d.c.slice().sort((a, b) => d.sort(a.u, b.u) || a.label.localeCompare(b.label, 'ko')).slice(0, per * 3);
+    const pick = shuffle(win, hash(seedKey, 'tc', d.k)).slice(0, per).sort((a, b) => d.sort(a.u, b.u) || a.label.localeCompare(b.label, 'ko'));
+    for (const x of pick) list.push({ name: x.label, href: x.href });
+    return `<div><dt>${esc(d.t)}</dt><dd><ul class="vh-pills">${pick.map((x) => `<li><a href="${x.href}">${esc(x.label)}<small>${esc(d.m(x.u))}</small></a></li>`).join('')}</ul></dd></div>`;
+  }).join('\n');
+  return { html: frame('theme', 'by grain', heading, `<dl class="vh-lanes">${body}</dl>`, sub, num), list };
+}
+
 /** 코스 묶음 — 시도별 코스 안내문으로 가는 롱테일. */
 export function courseTopic(sd, courses) {
   return courses.map((c) => ({ label: `${sd.name} ${c.ko}`, href: `/${sd.slug}/course/${c.slug}/` }));

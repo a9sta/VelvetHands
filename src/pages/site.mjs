@@ -4,7 +4,7 @@ import { title, desc, clampDesc } from '../lib/seo.mjs';
 import * as S from '../lib/schema.mjs';
 import {
   courseRoll, stepCards, stepSet, statTiles, faqBlock, noticeBlock,
-  longtail, hailStrip, siteLinks, topicLinks, docTopics, halfLabel,
+  longtail, hailStrip, siteLinks, topicLinks, docTopics, halfLabel, themeCards, spotPool,
 } from '../lib/blocks.mjs';
 import { ringGlyph } from '../assets.mjs';
 import { SEC, ANCHOR, COURSE_ANCHOR, DOC_LINKS, shapeName } from '../content/copy.mjs';
@@ -85,7 +85,11 @@ export function homePage(ctx) {
     { label: '동 이름으로 바로', items: deep, pick: 18, anchor: ANCHOR },
     { label: '시군구로', items: guList, pick: 16, anchor: ANCHOR },
     { label: '먼저 읽을 것', items: DOC_LINKS },
-  ], seed, '08', esc(at(h, SEC.topicHead, 8)), esc(at(h, SEC.topicSub, 3)));
+  ], seed, '09', esc(at(h, SEC.topicHead, 8)), esc(at(h, SEC.topicSub, 3)));
+  const theme = themeCards({
+    pool: spotPool(regions, { sidoLabel: true }), noun: '동', seedKey: seed, num: '08',
+    heading: esc(at(h, SEC.themeHead, 4)), sub: esc(at(h, SEC.themeSub, 5)), cards: 6, per: 3,
+  });
 
   const body = [
     hero,
@@ -96,6 +100,7 @@ export function homePage(ctx) {
     postBlock,
     faqHtml,
     noticeBlock(seed, '07'),
+    theme.html,
     topics,
     hailStrip(cfg, '지금 있는 곳', seed),
   ].join('\n');
@@ -119,6 +124,7 @@ export function homePage(ctx) {
           courses,
         }),
         S.itemList(`${siteUrl}/#sidolist`, '찾아가는 시도', regions.map((r) => ({ name: r.name, url: `${siteUrl}/${r.slug}/` }))),
+        S.itemList(`${siteUrl}/#themes`, '결이 같은 동 모음', theme.list.map((x) => ({ name: x.name, url: `${siteUrl}${x.href}` }))),
         S.faqPage(`${siteUrl}/`, qa),
         S.howTo(`${siteUrl}/`, '전화 한 통으로 부르는 다섯 걸음', steps, cfg),
       ],

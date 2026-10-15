@@ -40,13 +40,15 @@ export function website(cfg, url) {
   };
 }
 
-export function webpage({ url, siteUrl, title, desc, breadcrumbId }) {
+export function webpage({ url, siteUrl, title, desc, breadcrumbId, pageType, about, mainList }) {
   return {
-    '@type': 'WebPage', '@id': `${url}#page`, url, name: title, description: desc,
+    '@type': pageType || 'WebPage', '@id': `${url}#page`, url, name: title, description: desc,
     inLanguage: 'ko-KR', isPartOf: { '@id': `${siteUrl}/#site` },
     dateModified: '@@LM@@',
     speakable: SPEAKABLE,
     ...(breadcrumbId ? { breadcrumb: { '@id': breadcrumbId } } : {}),
+    ...(about ? { about: { '@id': about } } : {}),
+    ...(mainList ? { mainEntity: { '@id': mainList } } : {}),
   };
 }
 

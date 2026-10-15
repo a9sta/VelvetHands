@@ -2,7 +2,7 @@ import { layout, frame } from '../lib/html.mjs';
 import { esc, hash, won, josa, km2, shuffle } from '../lib/util.mjs';
 import { title, desc, clampDesc } from '../lib/seo.mjs';
 import * as S from '../lib/schema.mjs';
-import { statTiles, faqBlock, stepCards, stepSet, noticeBlock, hailStrip, courseRoll, topicLinks, courseTopic, guIndex, halfLabel } from '../lib/blocks.mjs';
+import { statTiles, faqBlock, stepCards, stepSet, noticeBlock, hailStrip, courseRoll, topicLinks, courseTopic, guIndex, halfLabel, themeCards, spotPool, guPool } from '../lib/blocks.mjs';
 import { ringGlyph } from '../assets.mjs';
 import { SEC, ANCHOR, COURSE_ANCHOR, DOC_LINKS, shapeName } from '../content/copy.mjs';
 
@@ -84,6 +84,10 @@ export function coursePage(ctx, c) {
     { label: '동 이름으로 바로', items: deepAll, pick: 16, anchor: ANCHOR },
     { label: '먼저 읽을 것', items: DOC_LINKS },
   ], seed, '07', esc(at(h, SEC.topicHead, 8)), esc(at(h, SEC.topicSub, 3)));
+  const theme = themeCards({
+    pool: spotPool(regions, { sidoLabel: true }), noun: '동', seedKey: seed, num: '06',
+    heading: esc(at(h, SEC.themeHead, 4)), sub: esc(at(h, SEC.themeSub, 5)), cards: 3, per: 4,
+  });
 
   const body = [
     open,
@@ -93,6 +97,7 @@ export function coursePage(ctx, c) {
     stepCards(seed, '03'),
     faqHtml,
     noticeBlock(seed, '05'),
+    theme.html,
     topics,
   ].join('\n');
 
@@ -118,6 +123,8 @@ export function coursePage(ctx, c) {
           areaServed: { '@type': 'Country', name: '대한민국' },
           courses: [c],
         }),
+        S.itemList(`${url}#sidolist`, `${c.ko}${josa(c.ko, '을/를')} 받는 시도`, regions.map((r) => ({ name: `${r.name} ${c.ko}`, url: `${siteUrl}/${r.slug}/course/${c.slug}/` }))),
+        S.itemList(`${url}#themes`, `${c.ko} 부르기 전에 볼 곳`, theme.list.map((x) => ({ name: x.name, url: `${siteUrl}${x.href}` }))),
         S.faqPage(url, qa),
         S.howTo(url, `${c.ko}${josa(c.ko, '을/를')} 부르는 다섯 걸음`, steps, cfg),
       ],
@@ -194,7 +201,12 @@ export function sidoCoursePage(ctx, sd, c) {
     { label: `${sd.name} 시군구`, items: guHere, pick: 16, anchor: ANCHOR },
     ...(deepHere.length ? [{ label: `${sd.name} 동으로 바로`, items: deepHere, pick: 14, anchor: ANCHOR }] : []),
     { label: '먼저 읽을 것', items: DOC_LINKS },
-  ], seed, '06', esc(at(h, SEC.topicHead, 8)), esc(at(h, SEC.topicSub, 3)));
+  ], seed, '08', esc(at(h, SEC.topicHead, 8)), esc(at(h, SEC.topicSub, 3)));
+  const theme = themeCards({
+    pool: sd.main ? spotPool([sd]) : guPool(regions.filter((r) => r.slug !== sd.slug), { sidoLabel: true }),
+    noun: sd.main ? '동' : '시군구', seedKey: seed, num: '07',
+    heading: esc(at(h, SEC.themeHead, 4)), sub: esc(at(h, SEC.themeSub, 5)), cards: 4, per: 4,
+  });
 
   /* ★서브 시도의 시도×코스는 지역 고유 내용이 적어 얇아진다. 그 시도에 든
      행정동 이름을 그대로 깔아 쪽마다 다른 살을 붙인다(시군구 쪽에도 있는 목록이다). */
@@ -224,6 +236,7 @@ export function sidoCoursePage(ctx, sd, c) {
     guIndex(sd, seed, null, '04', { pick: 14 }),
     faqHtml,
     stepCards(seed, '06'),
+    theme.html,
     topics,
   ].join('\n');
 
@@ -236,6 +249,7 @@ export function sidoCoursePage(ctx, sd, c) {
       h1: `${esc(sd.name)} ${esc(c.ko)} <span class="vh-h1-s">집까지 가는 ${c.min}분 값 ${won(c.price)}원</span>`,
       body,
       pageKind: 'sidocourse',
+      about: `${siteUrl}/${sd.slug}/`,
       geo: { iso: sd.iso, placename: sd.full, lat: sd.lat, lng: sd.lng },
       crumbs: [
         { name: '처음', url: `${siteUrl}/` },
@@ -251,6 +265,8 @@ export function sidoCoursePage(ctx, sd, c) {
           areaServed: { '@type': 'AdministrativeArea', name: sd.full },
           courses: [c],
         }),
+        S.itemList(`${url}#gulist`, `${sd.name} ${c.ko}${josa(c.ko, '을/를')} 받는 시군구`, sd.gu.map((x) => ({ name: x.name, url: `${siteUrl}/${sd.slug}/${x.slug}/` }))),
+        S.itemList(`${url}#themes`, `${sd.name} ${c.ko} 부르기 전에 볼 곳`, theme.list.map((x) => ({ name: x.name, url: `${siteUrl}${x.href}` }))),
         S.faqPage(url, qa),
         S.howTo(url, `${sd.name}에서 ${c.ko}${josa(c.ko, '을/를')} 부르는 다섯 걸음`, steps, cfg),
       ],

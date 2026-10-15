@@ -222,6 +222,12 @@ main{max-width:var(--w);margin:0 auto;padding:18px 20px 64px}
 .vh-key{margin:16px 0 0;font-size:13px;color:var(--dim);text-align:center}
 
 /* ── 주제 묶음 링크 ────────────────────────────────── */
+/* ── 찬 몫의 결로 묶은 줄 = 왼쪽 이름표 가로줄 ───── */
+.vh-lanes{margin:0}
+.vh-lanes>div{display:grid;gap:8px;padding:12px 0;border-top:1px solid var(--line)}
+@media (min-width:760px){.vh-lanes>div{grid-template-columns:230px 1fr;gap:18px}}
+.vh-lanes dt{margin:0;font-size:14px;font-weight:700;line-height:1.45;border-left:3px solid var(--acc);padding-left:10px;color:var(--ink)}
+.vh-lanes dd{margin:0}
 .vh-routes{display:grid;gap:22px}
 @media (min-width:720px){.vh-routes{grid-template-columns:1fr 1fr}}
 .vh-route-h{margin:0 0 10px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--clay)}

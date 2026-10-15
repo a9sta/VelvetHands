@@ -16,14 +16,14 @@ export function layout(ctx, opts) {
   const { cfg, siteUrl, latestPosts } = ctx;
   const {
     path, title, desc, h1, body, jsonld = [], geo, crumbs = [],
-    noindex = false, pageKind = '',
+    noindex = false, pageKind = '', pageType = '', about = '', mainList = '',
   } = opts;
   const url = `${siteUrl}${path}`;
   const graph = S.graph([
     S.organization(cfg, siteUrl),
     S.website(cfg, siteUrl),
     crumbs.length ? S.breadcrumb(url, crumbs) : null,
-    S.webpage({ url, siteUrl, title, desc, breadcrumbId: crumbs.length ? `${url}#crumb` : null }),
+    S.webpage({ url, siteUrl, title, desc, breadcrumbId: crumbs.length ? `${url}#crumb` : null, pageType, about, mainList }),
     ...jsonld,
   ]);
 

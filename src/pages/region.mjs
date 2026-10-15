@@ -5,7 +5,7 @@ import * as S from '../lib/schema.mjs';
 import {
   courseRoll, stepCards, stepSet, statTiles, faqBlock, noticeBlock,
   shapeKin, spotIndex, ruralList, dongNameList, guIndex, kinList, hailStrip,
-  topicLinks, courseTopic, halfLabel,
+  topicLinks, courseTopic, halfLabel, themeCards, spotPool, guPool,
 } from '../lib/blocks.mjs';
 import { ringGlyph } from '../assets.mjs';
 import {
@@ -97,7 +97,11 @@ export function spotPage(ctx, sd, g, s) {
     { label: '땅 모양이 닮은 시군구', items: g.kin.map((t) => ({ label: t.gu, href: `/${t.sidoSlug}/${t.slug}/` })), anchor: NEAR_ANCHOR },
     { label: '다른 시도', items: far, pick: 18, anchor: ANCHOR },
     { label: '먼저 읽을 것', items: DOC_LINKS },
-  ], seed, '09', esc(at(h, SEC.topicHead, 8)), esc(at(h, SEC.topicSub, 3)));
+  ], seed, '10', esc(at(h, SEC.topicHead, 8)), esc(at(h, SEC.topicSub, 3)));
+  const theme = themeCards({
+    pool: spotPool(regions, { sidoLabel: true, skipGu: `${sd.slug}/${g.slug}` }), noun: '동', seedKey: seed, num: '09',
+    heading: esc(at(h, SEC.themeHead, 4)), sub: esc(at(h, SEC.themeSub, 5)), cards: 3, per: 4, prefer: [`s${s.shape}`],
+  });
 
   const body = [
     open,
@@ -110,6 +114,7 @@ export function spotPage(ctx, sd, g, s) {
     spotIndex(sd, g, seed, s.slug, '05'),
     guIndex(sd, seed, g.slug, '07', { pick: 12 }),
     noticeBlock(seed, '08'),
+    theme.html,
     topics,
   ].join('\n');
 
@@ -122,6 +127,7 @@ export function spotPage(ctx, sd, g, s) {
       h1: `${esc(g.name)} ${esc(s.name)} <span class="vh-h1-s">출장마사지 홈타이 · 반경 ${R_SPOT[0]} 안 땅이 ${s.occ[0]}%인 ${esc(c.shapeW)} 땅</span>`,
       body,
       pageKind: 'spot',
+      about: `${url}#place`,
       geo: { iso: sd.iso, placename: `${sd.full} ${g.name} ${s.name}`, lat: s.lat, lng: s.lng },
       crumbs: [
         { name: '처음', url: `${siteUrl}/` },
@@ -140,6 +146,7 @@ export function spotPage(ctx, sd, g, s) {
           areaServed: { '@id': `${url}#place` },
           courses,
         }),
+        S.itemList(`${url}#themes`, `${s.name}${josa(s.name, '과/와')} 결이 같은 곳`, theme.list.map((x) => ({ name: x.name, url: `${siteUrl}${x.href}` }))),
         S.faqPage(url, qa),
         S.howTo(url, `${g.name} ${s.name}에서 부르는 다섯 걸음`, steps, cfg),
       ],
@@ -227,7 +234,14 @@ export function guPage(ctx, sd, g) {
     ...(sidoDeep.length ? [{ label: `${sd.name} 동으로 바로`, items: sidoDeep, pick: 16, anchor: ANCHOR }] : []),
     { label: '다른 시군구', items: far, pick: 18, anchor: ANCHOR },
     { label: '먼저 읽을 것', items: DOC_LINKS },
-  ], seed, '10', esc(at(h, SEC.topicHead, 8)), esc(at(h, SEC.topicSub, 3)));
+  ], seed, '11', esc(at(h, SEC.topicHead, 8)), esc(at(h, SEC.topicSub, 3)));
+  const theme = themeCards({
+    pool: mode === 'spot'
+      ? spotPool(regions.filter((r) => r.slug === sd.slug), { skipGu: `${sd.slug}/${g.slug}` })
+      : guPool(regions, { sidoLabel: true, skip: `${sd.slug}/${g.slug}` }),
+    noun: mode === 'spot' ? '동' : '시군구', seedKey: seed, num: '10',
+    heading: esc(at(h, SEC.themeHead, 4)), sub: esc(at(h, SEC.themeSub, 5)), cards: 3, per: 4, prefer: [`s${g.shape}`],
+  });
 
   const body = [
     open,
@@ -241,6 +255,7 @@ export function guPage(ctx, sd, g) {
     faqHtml,
     noticeBlock(seed, '08'),
     guIndex(sd, seed, g.slug, '09', { pick: 20 }),
+    theme.html,
     topics,
   ].join('\n');
 
@@ -253,6 +268,9 @@ export function guPage(ctx, sd, g) {
       h1: `${esc(sd.name)} ${esc(g.name)} <span class="vh-h1-s">출장마사지 홈타이 · ${mode === 'spot' ? `동 ${g.spotCount}구역 안내문` : mode === 'rural' ? `읍·면 ${g.ruralCount}구역까지 찾아가요` : `행정동 ${g.dongCount}구역 전부 찾아가요`}</span>`,
       body,
       pageKind: 'gu',
+      pageType: 'CollectionPage',
+      about: `${url}#place`,
+      mainList: g.spots.length ? `${url}#spotlist` : `${url}#sidogu`,
       geo: { iso: sd.iso, placename: `${sd.full} ${g.name}`, lat: g.lat, lng: g.lng },
       crumbs: [
         { name: '처음', url: `${siteUrl}/` },
@@ -272,7 +290,8 @@ export function guPage(ctx, sd, g) {
         }),
         g.spots.length
           ? S.itemList(`${url}#spotlist`, `${g.name} 동`, g.spots.map((s) => ({ name: s.name, url: `${siteUrl}/${sd.slug}/${g.slug}/${s.slug}/` })))
-          : null,
+          : S.itemList(`${url}#sidogu`, `${sd.name}의 시군구`, sd.gu.map((x) => ({ name: x.name, url: `${siteUrl}/${sd.slug}/${x.slug}/` }))),
+        S.itemList(`${url}#themes`, `${g.name}${josa(g.name, '과/와')} 결이 같은 곳`, theme.list.map((x) => ({ name: x.name, url: `${siteUrl}${x.href}` }))),
         S.faqPage(url, qa),
         S.howTo(url, `${sd.name} ${g.name}에서 부르는 다섯 걸음`, steps, cfg),
       ].filter(Boolean),
@@ -308,7 +327,7 @@ export function sidoPage(ctx, sd) {
   const facts = frame('fact', 'measured', `${esc(sd.name)} 땅에 그린 원`,
     statTiles([
       ['행정 명칭', esc(sd.full)],
-      ['안내문을 낸 겹', sd.main ? '시군구 밑에 동까지' : '시군구에서 끊음'],
+      ['안내문이 내려가는 깊이', sd.main ? '시군구 아래 동 단위까지' : '시군구 단위에서 마무리'],
       ['시군구', `${sd.gu.length}곳`],
       ['행정동 합', `${sd.dongCount}구역`],
       sd.main ? ['안내문을 낸 동', `${sd.spotCount}구역`] : ['동 이름', '아래 시군구 쪽 목록에 있어요'],
@@ -324,7 +343,7 @@ export function sidoPage(ctx, sd) {
         : [
           ['시군구 평균 찬 몫', `${sd.avgOcc}%<small>반경 2.5km 기준</small>`, true],
           ['평균 절반 반지름', `${halfLabel(sd.avgHalf, 2500)}`],
-          ['받는 시각', `${esc(cfg.hours)}<small>${esc(cfg.pay)}</small>`],
+          ['접수 시간대', `${esc(cfg.hours)}<small>${esc(cfg.pay)}</small>`],
         ]),
       ['가장 멀리 차는 곳', `${link(sd.fullName, sd.fullSlug)}<small>절반 반지름 ${halfLabel(sd.fullV)}</small>`],
       ['가장 일찍 꺼지는 곳', `${link(sd.leakName, sd.leakSlug)}<small>절반 반지름 ${halfLabel(sd.leakV, 500)}</small>`],
@@ -365,6 +384,11 @@ export function sidoPage(ctx, sd) {
     { label: '다른 시도', items: far, pick: 16, anchor: ANCHOR },
     { label: '먼저 읽을 것', items: DOC_LINKS },
   ], seed, '08', esc(at(h, SEC.topicHead, 8)), esc(at(h, SEC.topicSub, 3)));
+  const theme = themeCards({
+    pool: sd.main ? spotPool([sd]) : guPool(regions.filter((r) => r.slug !== sd.slug), { sidoLabel: true }),
+    noun: sd.main ? '동' : '시군구', seedKey: seed, num: '07',
+    heading: esc(at(h, SEC.themeHead, 4)), sub: esc(at(h, SEC.themeSub, 5)), cards: sd.main ? 6 : 5, per: 4,
+  });
 
   const body = [
     open,
@@ -376,6 +400,7 @@ export function sidoPage(ctx, sd) {
     courseRoll(courses, seed, sd.name, '05', { full: false }),
     stepCards(seed, '06'),
     faqHtml,
+    theme.html,
     topics,
   ].join('\n');
 
@@ -388,6 +413,9 @@ export function sidoPage(ctx, sd) {
       h1: `${esc(sd.name)} <span class="vh-h1-s">출장마사지 홈타이 · ${sd.main ? `동 ${sd.spotCount}구역 · 땅 모양 ${esc(shapeName(sd.shape))}` : `시군구 ${sd.gu.length}곳 · 평균 찬 몫 ${sd.avgOcc}%`}</span>`,
       body,
       pageKind: 'sido',
+      pageType: 'CollectionPage',
+      about: `${url}#place`,
+      mainList: `${url}#gulist`,
       geo: { iso: sd.iso, placename: sd.full, lat: sd.lat, lng: sd.lng },
       crumbs: [
         { name: '처음', url: `${siteUrl}/` },
@@ -405,6 +433,7 @@ export function sidoPage(ctx, sd) {
         }),
         S.itemList(`${url}#gulist`, `${sd.name} 시군구`, sd.gu.map((g) => ({ name: g.name, url: `${siteUrl}/${sd.slug}/${g.slug}/` }))),
         S.itemList(`${url}#courselist`, `${sd.name} 코스`, courses.map((cc) => ({ name: `${sd.name} ${cc.ko}`, url: `${siteUrl}/${sd.slug}/course/${cc.slug}/` }))),
+        S.itemList(`${url}#themes`, `${sd.name}에서 결이 같은 곳`, theme.list.map((x) => ({ name: x.name, url: `${siteUrl}${x.href}` }))),
         S.faqPage(url, qa),
         S.howTo(url, `${sd.name}에서 부르는 다섯 걸음`, steps, cfg),
       ],
